@@ -1,12 +1,14 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <widget xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:vs="http://schemas.microsoft.com/appx/2014/htmlapps" id="io.cordova.app695be490c45b45aaa49b1396fb42fd24" version="1.0.0.0" xmlns="http://www.w3.org/ns/widgets">
   <name>NHLPlayerStats</name>
-  <description>A blank project that uses Apache Cordova to help you build an app that targets multiple mobile platforms: Android, iOS, Windows, and Windows Phone.</description>
-  <author href="http://cordova.io" email="dev@cordova.apache.org">Apache Cordova Team </author>
+  <description>Fetch NHL players stats and highlights players from your favorite team.</description>
+  <author href="http://cordova.io" email="dev@cordova.apache.org">gujen</author>
   <content src="index.html" />
   <access origin="*" />
-  <vs:features />
   <preference name="SplashScreen" value="screen" />
   <preference name="windows-target-version" value="8.0" />
   <preference name="windows-phone-target-version" value="8.1" />
+  <vs:plugin name="org.apache.cordova.file" version="1.3.1" />
+  <vs:plugin name="org.apache.cordova.geolocation" version="0.3.10" />
+  <vs:platformSpecificValues />
 </widget>
