@@ -193,7 +193,7 @@
 		this.assists = parseInt(assists);
 		this.points = this.goals + this.assists;
 		this.plusMinus = parseInt(plusMinus);
-		this.avgTime = getSecondsFromAvgTime(avgTime);
+		this.avgTime = avgTime;
 	}
 
 	// RDS Constants
@@ -204,7 +204,7 @@
 	var playersPerTable = 10;
 	var selectedTeam = teamToId.montreal;
 	var statsFileName = "stats.dat";
-	var statsCacheDuration = 60 * 1000 * 60; // 60 minutes
+	var statsCacheDuration = 30 * 1000 * 60; // 60 minutes
 
 	var pagesDownloaded = 0;
 	var players = new Array();
@@ -258,7 +258,14 @@
 	};
 
 	function loadFromFile(lines) {
-		// TODO
+		for (var i = 1; i < lines.length; i++) {
+			if (lines[i] === "\n") {
+				break;
+			}
+
+			var playerInfo = lines[i].split(";");
+			players[players.length] = new NhlPlayer(playerInfo[0], playerInfo[1], playerInfo[2], playerInfo[3], playerInfo[4], playerInfo[5], playerInfo[7], playerInfo[8]);
+		}
 		displayStats();
 	};
 
@@ -308,7 +315,7 @@
 			var plusMinus = $(this).find("td:nth-child(" + stats.plusMinus.column + ")").text();
 			var avgTime = $(this).find("td:nth-child(" + stats.avgTime.column + ")").text();
 
-			newPlayers[count] = new NhlPlayer(name, team, pos, gamesPlayed, goals, assists, plusMinus, avgTime);
+			newPlayers[count] = new NhlPlayer(name, team, pos, gamesPlayed, goals, assists, plusMinus, getSecondsFromAvgTime(avgTime));
 			count++;
 		});
 
@@ -326,11 +333,15 @@
 			var linesToWrite = new Array(players.length + 2);
 			fileWriter.seek(0);
 			var now = new Date().toString();
-			for (var i = 1; i < players.length; i++) {
-				if (true) {
-					var dsadsa = 5;
-				}
+			linesToWrite[0] = now;
+			for (var i = 0; i < players.length; i++) {
+				var p = players[i];
+				var playerString = [p.name, p.team, p.pos, p.gamesPlayed, p.goals, p.assists, p.points, p.plusMinus, p.avgTime].join(";");
+				linesToWrite[i + 1] = playerString;
 			}
+			linesToWrite[linesToWrite.length - 1] = "\n";
+			var statsString = linesToWrite.join("\n");
+			fileWriter.write(statsString);
 		}, fileErrorHandler);
 	};
 
