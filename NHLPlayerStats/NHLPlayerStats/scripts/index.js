@@ -26,6 +26,12 @@
 	};
 	////////// ...CORDOVA
 
+	////////// Globals
+	var pagesDownloaded = 0;
+	var players = new Array();
+	var statsFileEntry;
+	////////// ...Globals
+
 	////////// Constants and definitions
 	var stats = {
 		name: {
@@ -85,36 +91,36 @@
 	};
 
 	var teams = {
-		anaheim: { id: 2, name: "Ducks" },
-		arizona: { id: 29, name: "Coyotes" },
-		boston: { id: 7, name: "Bruins" },
-		buffalo: { id: 8, name: "Sabres" },
-		calgary: { id: 22, name: "Flames" },
-		caroline: { id: 13, name: "Hurricanes" },
-		chicago: { id: 17, name: "Blackhawks" },
-		colorado: { id: 23, name: "Avalanche" },
-		colombus: { id: 18, name: "Blue Jackets" },
-		dallas: { id: 27, name: "Stars" },
-		detroit: { id: 19, name: "Red Wings" },
-		edmonton: { id: 24, name: "Oilers" },
-		florida: { id: 14, name: "Panthers" },
-		losAngeles: { id: 28, name: "Kings" },
-		minnesota: { id: 25, name: "Wild" },
-		montreal: { id: 9, name: "Canadiens" },
-		nashville: { id: 20, name: "Predators" },
-		newJersey: { id: 3, name: "Devils" },
-		newYorkI: { id: 4, name: "Islanders" },
-		newYorkR: { id: 5, name: "Rangers" },
-		ottawa: { id: 10, name: "Senators" },
-		philadelphia: { id: 1, name: "Flyers" },
-		pittsburgh: { id: 6, name: "Penguins" },
-		sanJose: { id: 30, name: "Sharks" },
-		stLouis: { id: 21, name: "Blues" },
-		tampaBay: { id: 15, name: "Lightning" },
-		toronto: { id: 11, name: "Maple Leafs" },
-		vancouver: { id: 26, name: "Canucks" },
-		washington: { id: 16, name: "Capitals" },
-		winnipeg: { id: 12, name: "Jets" }
+		anaheim: { id: 2, location: "Anaheim", name: "Ducks" },
+		arizona: { id: 29, location: "Arizona", name: "Coyotes" },
+		boston: { id: 7, location: "Boston", name: "Bruins" },
+		buffalo: { id: 8, location: "Buffalo", name: "Sabres" },
+		calgary: { id: 22, location: "Calgary", name: "Flames" },
+		carolina: { id: 13, location: "Carolina", name: "Hurricanes" },
+		chicago: { id: 17, location: "Chicago", name: "Blackhawks" },
+		colorado: { id: 23, location: "Colorado", name: "Avalanche" },
+		colombus: { id: 18, location: "Colombus", name: "Blue Jackets" },
+		dallas: { id: 27, location: "Dallas", name: "Stars" },
+		detroit: { id: 19, location: "Detroit", name: "Red Wings" },
+		edmonton: { id: 24, location: "Edmonton", name: "Oilers" },
+		florida: { id: 14, location: "Florida", name: "Panthers" },
+		losAngeles: { id: 28, location: "Los Angeles", name: "Kings" },
+		minnesota: { id: 25, location: "Minnesota", name: "Wild" },
+		montreal: { id: 9, location: "Montreal", name: "Canadiens" },
+		nashville: { id: 20, location: "Nashville", name: "Predators" },
+		newJersey: { id: 3, location: "New Jersey", name: "Devils" },
+		newYorkI: { id: 4, location: "New York Islanders", name: "Islanders" },
+		newYorkR: { id: 5, location: "New York Rangers", name: "Rangers" },
+		ottawa: { id: 10, location: "Ottawa", name: "Senators" },
+		philadelphia: { id: 1, location: "Philadelphia", name: "Flyers" },
+		pittsburgh: { id: 6, location: "Pittsburgh", name: "Penguins" },
+		sanJose: { id: 30, location: "San Jose", name: "Sharks" },
+		stLouis: { id: 21, location: "St. Louis", name: "Blues" },
+		tampaBay: { id: 15, location: "Tampa Bay", name: "Lightning" },
+		toronto: { id: 11, location: "Toronto", name: "Maple Leafs" },
+		vancouver: { id: 26, location: "Vancouver", name: "Canucks" },
+		washington: { id: 16, location: "Washington", name: "Capitals" },
+		winnipeg: { id: 12, location: "Winnipeg", name: "Jets" }
 	};
 
 	var urlHelper = {
@@ -205,10 +211,6 @@
 	var selectedTeam = teams.montreal;
 	var statsFileName = "stats.dat";
 	var statsCacheDuration = 30 * 1000 * 60;
-
-	var pagesDownloaded = 0;
-	var players = new Array();
-	var statsFileEntry;
 	////////// ...Constants and definitions
 
 	////////// Helper functions
