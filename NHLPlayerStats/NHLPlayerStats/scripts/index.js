@@ -84,37 +84,37 @@
 		}
 	};
 
-	var teamToId = {
-		anaheim: "2",
-		arizona: "29",
-		boston: "7",
-		buffalo: "8",
-		calgary: "22",
-		caroline: "13",
-		chicago: "17",
-		colorado: "23",
-		colombus: "18",
-		dallas: "27",
-		detroit: "19",
-		edmonton: "24",
-		florida: "14",
-		losAngeles: "28",
-		minnesota: "25",
-		montreal: "9",
-		nashville: "20",
-		newJersey: "3",
-		newYorkI: "4",
-		newYorkR: "5",
-		ottawa: "10",
-		philadelphia: "1",
-		pittsburgh: "6",
-		sanJose: "30",
-		stLouis: "21",
-		tampaBay: "15",
-		toronto: "11",
-		vancouver: "26",
-		washington: "16",
-		winnipeg: "12"
+	var teams = {
+		anaheim: { id: 2, name: "Ducks" },
+		arizona: { id: 29, name: "Coyotes" },
+		boston: { id: 7, name: "Bruins" },
+		buffalo: { id: 8, name: "Sabres" },
+		calgary: { id: 22, name: "Flames" },
+		caroline: { id: 13, name: "Hurricanes" },
+		chicago: { id: 17, name: "Blackhawks" },
+		colorado: { id: 23, name: "Avalanche" },
+		colombus: { id: 18, name: "Blue Jackets" },
+		dallas: { id: 27, name: "Stars" },
+		detroit: { id: 19, name: "Red Wings" },
+		edmonton: { id: 24, name: "Oilers" },
+		florida: { id: 14, name: "Panthers" },
+		losAngeles: { id: 28, name: "Kings" },
+		minnesota: { id: 25, name: "Wild" },
+		montreal: { id: 9, name: "Canadiens" },
+		nashville: { id: 20, name: "Predators" },
+		newJersey: { id: 3, name: "Devils" },
+		newYorkI: { id: 4, name: "Islanders" },
+		newYorkR: { id: 5, name: "Rangers" },
+		ottawa: { id: 10, name: "Senators" },
+		philadelphia: { id: 1, name: "Flyers" },
+		pittsburgh: { id: 6, name: "Penguins" },
+		sanJose: { id: 30, name: "Sharks" },
+		stLouis: { id: 21, name: "Blues" },
+		tampaBay: { id: 15, name: "Lightning" },
+		toronto: { id: 11, name: "Maple Leafs" },
+		vancouver: { id: 26, name: "Canucks" },
+		washington: { id: 16, name: "Capitals" },
+		winnipeg: { id: 12, name: "Jets" }
 	};
 
 	var urlHelper = {
@@ -197,14 +197,14 @@
 	}
 
 	// RDS Constants
-	var pagesToFetch = 4; // Fetch only 4 pages of stats
+	var pagesToFetch = 3; // Fetch only 4 pages of stats
 	var playersPerPage = 50;
 	// ...RDS Constants
 
 	var playersPerTable = 10;
-	var selectedTeam = teamToId.montreal;
+	var selectedTeam = teams.montreal;
 	var statsFileName = "stats.dat";
-	var statsCacheDuration = 30 * 1000 * 60; // 60 minutes
+	var statsCacheDuration = 30 * 1000 * 60;
 
 	var pagesDownloaded = 0;
 	var players = new Array();
@@ -239,18 +239,18 @@
 
 	function loadStats(fileContent) {
 		var lines = fileContent.split("\n");
-		if (newDataNeeded(lines[0])) {
+		if (newDataNeeded(lines)) {
 			loadFromWeb();
 		} else {
 			loadFromFile(lines);
 		}
 	};
 
-	function newDataNeeded(fileHeader) {
-		var lastUpdate = new Date(fileHeader);
+	function newDataNeeded(fileLines) {
+		var lastUpdate = new Date(fileLines[0]);
 		var now = new Date();
 
-		if (lastUpdate.toString() === "Invalid Date" || now - lastUpdate > statsCacheDuration) {
+		if (lastUpdate.toString() === "Invalid Date" || now - lastUpdate > statsCacheDuration || fileLines.length - 3 < pagesToFetch * playersPerPage) {
 			return true;
 		}
 
@@ -369,6 +369,9 @@
 		for (; currentIndex < playersPerTable; currentIndex++) {
 			var tr = document.createElement("TR");
 			tBody.appendChild(tr);
+			if (relevantPlayers[currentIndex].team === selectedTeam.id) {
+				$(tr).toggleClass("fav");
+			}
 
 			var td = document.createElement("TD");
 			var nextRank = getRank(currentRank, currentIndex, stat, relevantPlayers);
@@ -391,6 +394,38 @@
 			td = document.createElement("TD");
 			td.appendChild(document.createTextNode(relevantPlayers[currentIndex][stat.label]));
 			tr.appendChild(td);
+		}
+
+		for (; currentIndex < relevantPlayers.length; currentIndex++) {
+			var nextRank = getRank(currentRank, currentIndex, stat, relevantPlayers);
+			if (nextRank !== currentRank) {
+				currentRank = nextRank;
+			}
+
+			if (relevantPlayers[currentIndex].team === selectedTeam.id) {
+				var tr = document.createElement("TR");
+				tBody.appendChild(tr);
+				$(tr).toggleClass("fav nextFav");
+
+				var td = document.createElement("TD");
+				td.appendChild(document.createTextNode(nextRank));
+				tr.appendChild(td);
+
+				td = document.createElement("TD");
+				var img = document.createElement("IMG");
+				img.src = urlHelper.getImgSrc(relevantPlayers[currentIndex].team);
+				td.appendChild(img);
+				tr.appendChild(td);
+
+				td = document.createElement("TD");
+				td.appendChild(document.createTextNode(relevantPlayers[currentIndex].name));
+				tr.appendChild(td);
+
+				td = document.createElement("TD");
+				td.appendChild(document.createTextNode(relevantPlayers[currentIndex][stat.label]));
+				tr.appendChild(td);
+				break;
+			}
 		}
 	};
 
