@@ -14,7 +14,11 @@
 		document.addEventListener('resume', onResume.bind(this), false);
 
 		// TODO: Cordova has been loaded. Perform any initialization that requires Cordova here.
+		generateSelectOptions();
+		selectNearestTeam();
 		initializeData();
+		document.getElementById("teamSelect").onchange = teamSelect_onChange;
+		$("#teamSelect").removeAttr("disabled");
 	};
 
 	function onPause() {
@@ -34,93 +38,48 @@
 
 	////////// Constants and definitions
 	var stats = {
-		name: {
-			label: "name",
-			column: 1,
-			comparer: compareNames,
-			sortingComparer: undefined
-		},
-		team: {
-			label: "team",
-			column: 2,
-			comparer: undefined,
-			sortingComparer: undefined
-		},
-		pos: {
-			label: "pos",
-			column: 3,
-			comparer: undefined,
-			sortingComparer: undefined
-		},
-		gamesPlayed: {
-			label: "gamesPlayed",
-			column: 4,
-			comparer: undefined,
-			sortingComparer: undefined
-		},
-		goals: {
-			label: "goals",
-			column: 5,
-			comparer: compareGoals,
-			sortingComparer: goalsSortingComparer
-		},
-		assists: {
-			label: "assists",
-			column: 6,
-			comparer: compareAssists,
-			sortingComparer: assistsSortingComparer
-		},
-		points: {
-			label: "points",
-			column: 7,
-			comparer: comparePoints,
-			sortingComparer: pointsSortingComparer
-		},
-		plusMinus: {
-			label: "plusMinus",
-			column: 8,
-			comparer: comparePlusMinus,
-			sortingComparer: undefined
-		},
-		avgTime: {
-			label: "avgTime",
-			column: 21,
-			comparer: undefined,
-			sortingComparer: undefined
-		}
+		name: { label: "name", column: 1, comparer: compareNames, sortingComparer: undefined },
+		team: { label: "team", column: 2, comparer: undefined, sortingComparer: undefined },
+		pos: { label: "pos", column: 3, comparer: undefined, sortingComparer: undefined },
+		gamesPlayed: { label: "gamesPlayed", column: 4, comparer: undefined, sortingComparer: undefined },
+		goals: { label: "goals", column: 5, comparer: compareGoals, sortingComparer: goalsSortingComparer },
+		assists: { label: "assists", column: 6, comparer: compareAssists, sortingComparer: assistsSortingComparer },
+		points: { label: "points", column: 7, comparer: comparePoints, sortingComparer: pointsSortingComparer },
+		plusMinus: { label: "plusMinus", column: 8, comparer: comparePlusMinus, sortingComparer: undefined },
+		avgTime: { label: "avgTime", column: 21, comparer: undefined, sortingComparer: undefined }
 	};
 
 	var teams = {
-		anaheim: { id: 2, location: "Anaheim", name: "Ducks" },
-		arizona: { id: 29, location: "Arizona", name: "Coyotes" },
-		boston: { id: 7, location: "Boston", name: "Bruins" },
-		buffalo: { id: 8, location: "Buffalo", name: "Sabres" },
-		calgary: { id: 22, location: "Calgary", name: "Flames" },
-		carolina: { id: 13, location: "Carolina", name: "Hurricanes" },
-		chicago: { id: 17, location: "Chicago", name: "Blackhawks" },
-		colorado: { id: 23, location: "Colorado", name: "Avalanche" },
-		colombus: { id: 18, location: "Colombus", name: "Blue Jackets" },
-		dallas: { id: 27, location: "Dallas", name: "Stars" },
-		detroit: { id: 19, location: "Detroit", name: "Red Wings" },
-		edmonton: { id: 24, location: "Edmonton", name: "Oilers" },
-		florida: { id: 14, location: "Florida", name: "Panthers" },
-		losAngeles: { id: 28, location: "Los Angeles", name: "Kings" },
-		minnesota: { id: 25, location: "Minnesota", name: "Wild" },
-		montreal: { id: 9, location: "Montreal", name: "Canadiens" },
-		nashville: { id: 20, location: "Nashville", name: "Predators" },
-		newJersey: { id: 3, location: "New Jersey", name: "Devils" },
-		newYorkI: { id: 4, location: "New York Islanders", name: "Islanders" },
-		newYorkR: { id: 5, location: "New York Rangers", name: "Rangers" },
-		ottawa: { id: 10, location: "Ottawa", name: "Senators" },
-		philadelphia: { id: 1, location: "Philadelphia", name: "Flyers" },
-		pittsburgh: { id: 6, location: "Pittsburgh", name: "Penguins" },
-		sanJose: { id: 30, location: "San Jose", name: "Sharks" },
-		stLouis: { id: 21, location: "St. Louis", name: "Blues" },
-		tampaBay: { id: 15, location: "Tampa Bay", name: "Lightning" },
-		toronto: { id: 11, location: "Toronto", name: "Maple Leafs" },
-		vancouver: { id: 26, location: "Vancouver", name: "Canucks" },
-		washington: { id: 16, location: "Washington", name: "Capitals" },
-		winnipeg: { id: 12, location: "Winnipeg", name: "Jets" }
+		anaheim: { id: 2, location: "Anaheim", name: "Ducks", coords: { lat: 33.8361, long: -117.8897 } },
+		arizona: { id: 29, location: "Arizona", name: "Coyotes", coords: { lat: 33.4500, long: -112.0667 } },
+		boston: { id: 7, location: "Boston", name: "Bruins", coords: { lat: 42.3581, long: -71.0636 } },
+		buffalo: { id: 8, location: "Buffalo", name: "Sabres", coords: { lat: 42.9047, long: -78.8494 } },
+		calgary: { id: 22, location: "Calgary", name: "Flames", coords: { lat: 51.0500, long: -114.0667 } },
+		carolina: { id: 13, location: "Carolina", name: "Hurricanes", coords: { lat: 35.7806, long: -78.6389 } },
+		chicago: { id: 17, location: "Chicago", name: "Blackhawks", coords: { lat: 41.8369, long: 87.6847 } },
+		colorado: { id: 23, location: "Colorado", name: "Avalanche", coords: { lat: 39.7392, long: -104.9847 } },
+		colombus: { id: 18, location: "Colombus", name: "Blue Jackets", coords: { lat: 39.9830, long: -82.9830 } },
+		dallas: { id: 27, location: "Dallas", name: "Stars", coords: { lat: 32.7758, long: -96.7967 } },
+		detroit: { id: 19, location: "Detroit", name: "Red Wings", coords: { lat: 42.3314, long: 83.0458 } },
+		edmonton: { id: 24, location: "Edmonton", name: "Oilers", coords: { lat: 53.5330, long: -113.5000 } },
+		florida: { id: 14, location: "Florida", name: "Panthers", coords: { lat: 26.1572, long: -80.2861 } },
+		losAngeles: { id: 28, location: "Los Angeles", name: "Kings", coords: { lat: 34.0500, long: -118.2500 } },
+		minnesota: { id: 25, location: "Minnesota", name: "Wild", coords: { lat: 44.9442, long: -93.0936 } },
+		montreal: { id: 9, location: "Montreal", name: "Canadiens", coords: { lat: 45.5000, long: -73.5667 } },
+		nashville: { id: 20, location: "Nashville", name: "Predators", coords: { lat: 36.1667, long: -86.7833 } },
+		newJersey: { id: 3, location: "New Jersey", name: "Devils", coords: { lat: 40.7242, long: -74.1726 } },
+		newYorkI: { id: 4, location: "New York", name: "Islanders", coords: { lat: 40.7049, long: -73.5838 } },
+		newYorkR: { id: 5, location: "New York", name: "Rangers", coords: { lat: 40.7177, long: -74.0119 } },
+		ottawa: { id: 10, location: "Ottawa", name: "Senators", coords: { lat: 45.4208, long: -75.6900 } },
+		philadelphia: { id: 1, location: "Philadelphia", name: "Flyers", coords: { lat: 39.9500, long: -75.1667 } },
+		pittsburgh: { id: 6, location: "Pittsburgh", name: "Penguins", coords: { lat: 40.4417, long: -80.0000 } },
+		sanJose: { id: 30, location: "San Jose", name: "Sharks", coords: { lat: 37.3330, long: -121.9000 } },
+		stLouis: { id: 21, location: "St. Louis", name: "Blues", coords: { lat: 38.6272, long: -90.1978 } },
+		tampaBay: { id: 15, location: "Tampa Bay", name: "Lightning", coords: { lat: 27.9472, long: -82.4586 } },
+		toronto: { id: 11, location: "Toronto", name: "Maple Leafs", coords: { lat: 43.7000, long: -79.4000 } },
+		vancouver: { id: 26, location: "Vancouver", name: "Canucks", coords: { lat: 49.2500, long: -123.1000 } },
+		washington: { id: 16, location: "Washington", name: "Capitals", coords: { lat: 38.8951, long: -77.0367 } },
+		winnipeg: { id: 12, location: "Winnipeg", name: "Jets", coords: { lat: 49.8994, long: -97.1392 } }
 	};
 
 	var urlHelper = {
@@ -144,11 +103,13 @@
 		searchAttDefault: "searchString=",
 		tabsAttDefault: "tabs_index=2",
 
-		getImgSrc: function (teamId) {
-			return this.imgSrcPrefix + teamId + this.imgSrcSuffix;
+		getImgSrc: function (teamId, isLarge) {
+			return this.imgSrcPrefix + (isLarge ? this.imgSizeLabelLarge : this.imgSizeLabelSmall) + teamId + this.imgSrcSuffix;
 		},
 
-		imgSrcPrefix: "http://rdsmedia.cookieless.ca/sports/hockey/nhl/team/35x17/",
+		imgSrcPrefix: "http://rdsmedia.cookieless.ca/sports/hockey/nhl/team/",
+		imgSizeLabelSmall: "35x17/",
+		imgSizeLabelLarge: "50x50/",
 		imgSrcSuffix: ".png"
 	};
 
@@ -158,36 +119,12 @@
 	};
 
 	var tables = [
-		{
-			id: "points_all",
-			stat: stats.points,
-			pos: positions.all
-		},
-		{
-			id: "goals_all",
-			stat: stats.goals,
-			pos: positions.all
-		},
-		{
-			id: "assists_all",
-			stat: stats.assists,
-			pos: positions.all
-		},
-		{
-			id: "points_d",
-			stat: stats.points,
-			pos: positions.d
-		},
-		{
-			id: "goals_d",
-			stat: stats.goals,
-			pos: positions.d
-		},
-		{
-			id: "assists_d",
-			stat: stats.assists,
-			pos: positions.d
-		}
+		{ id: "points_all", stat: stats.points, pos: positions.all },
+		{ id: "goals_all", stat: stats.goals, pos: positions.all },
+		{ id: "assists_all", stat: stats.assists, pos: positions.all },
+		{ id: "points_d", stat: stats.points, pos: positions.d },
+		{ id: "goals_d", stat: stats.goals, pos: positions.d },
+		{ id: "assists_d", stat: stats.assists, pos: positions.d }
 	];
 
 	function NhlPlayer(name, team, pos, gamesPlayed, goals, assists, plusMinus, avgTime) {
@@ -208,12 +145,38 @@
 	// ...RDS Constants
 
 	var playersPerTable = 10;
-	var selectedTeam = teams.montreal;
+	var selectedTeam = teams.montreal.id;
 	var statsFileName = "stats.dat";
-	var statsCacheDuration = 30 * 1000 * 60;
+	var statsCacheDuration = 1 * 1000 * 60;
 	////////// ...Constants and definitions
 
-	////////// Helper functions
+	////////// Functions
+	function generateSelectOptions() {
+		var slct = document.getElementById("teamSelect");
+		for (var team in teams) {
+			if (!teams.hasOwnProperty(team)) {
+				continue;
+			}
+			var option = document.createElement("option");
+			option.value = teams[team].id;
+			var teamStr = teams[team].location + " " + teams[team].name;
+			option.appendChild(document.createTextNode(teamStr));
+			slct.appendChild(option);
+		}
+	};
+
+	function selectNearestTeam() {
+
+	};
+
+	function teamSelect_onChange(e) {
+		selectedTeam = parseInt($("#teamSelect option:selected").val());
+		$("table").remove();
+		$(".spinner").toggleClass("hidden");
+		document.getElementById("teamImg").src = urlHelper.getImgSrc(selectedTeam, true);
+		displayStats();
+	};
+
 	function fileErrorHandler(e) {
 		console.log(e.code);
 	};
@@ -279,8 +242,8 @@
 	};
 
 	function getTeamFromImgSrc(imgSrc) {
-		var lengthToExtract = imgSrc.length - (urlHelper.imgSrcPrefix.length + urlHelper.imgSrcSuffix.length);
-		return imgSrc.substr(urlHelper.imgSrcPrefix.length, lengthToExtract);
+		var lengthToExtract = imgSrc.length - (urlHelper.imgSrcPrefix.length + urlHelper.imgSizeLabelSmall.length + urlHelper.imgSrcSuffix.length);
+		return imgSrc.substr(urlHelper.imgSrcPrefix.length + urlHelper.imgSizeLabelSmall.length, lengthToExtract);
 	};
 
 	function getSecondsFromAvgTime(avgTimeStr) {
@@ -358,6 +321,15 @@
 		}
 	};
 
+	function createTd(parentRow, text) {
+		var td = document.createElement("TD");
+		if (text !== undefined && text !== "") {
+			td.appendChild(document.createTextNode(text));
+		}
+		parentRow.appendChild(td);
+		return td;
+	};
+
 	function createTable(tableId, stat, relevantPlayers) {
 		var tableDiv = document.getElementById(tableId);
 		var table = document.createElement("TABLE");
@@ -371,31 +343,26 @@
 		for (; currentIndex < playersPerTable; currentIndex++) {
 			var tr = document.createElement("TR");
 			tBody.appendChild(tr);
-			if (relevantPlayers[currentIndex].team === selectedTeam.id) {
+			if (relevantPlayers[currentIndex].team === selectedTeam) {
 				$(tr).toggleClass("fav");
 			}
 
-			var td = document.createElement("TD");
 			var nextRank = getRank(currentRank, currentIndex, stat, relevantPlayers);
 			if (nextRank !== currentRank) {
-				td.appendChild(document.createTextNode(nextRank));
 				currentRank = nextRank;
+				createTd(tr, currentRank);
+			} else {
+				createTd(tr);
 			}
-			tr.appendChild(td);
 
-			td = document.createElement("TD");
+			var td = createTd(tr);
 			var img = document.createElement("IMG");
 			img.src = urlHelper.getImgSrc(relevantPlayers[currentIndex].team);
 			td.appendChild(img);
-			tr.appendChild(td);
 
-			td = document.createElement("TD");
-			td.appendChild(document.createTextNode(relevantPlayers[currentIndex].name));
-			tr.appendChild(td);
+			createTd(tr, relevantPlayers[currentIndex].name);
 
-			td = document.createElement("TD");
-			td.appendChild(document.createTextNode(relevantPlayers[currentIndex][stat.label]));
-			tr.appendChild(td);
+			createTd(tr, relevantPlayers[currentIndex][stat.label]);
 		}
 
 		for (; currentIndex < relevantPlayers.length; currentIndex++) {
@@ -404,28 +371,21 @@
 				currentRank = nextRank;
 			}
 
-			if (relevantPlayers[currentIndex].team === selectedTeam.id) {
+			if (relevantPlayers[currentIndex].team === selectedTeam) {
 				var tr = document.createElement("TR");
 				tBody.appendChild(tr);
 				$(tr).toggleClass("fav nextFav");
 
-				var td = document.createElement("TD");
-				td.appendChild(document.createTextNode(nextRank));
-				tr.appendChild(td);
+				createTd(tr, nextRank);
 
-				td = document.createElement("TD");
+				var td = createTd(tr);
 				var img = document.createElement("IMG");
 				img.src = urlHelper.getImgSrc(relevantPlayers[currentIndex].team);
 				td.appendChild(img);
-				tr.appendChild(td);
 
-				td = document.createElement("TD");
-				td.appendChild(document.createTextNode(relevantPlayers[currentIndex].name));
-				tr.appendChild(td);
+				createTd(tr, relevantPlayers[currentIndex].name);
 
-				td = document.createElement("TD");
-				td.appendChild(document.createTextNode(relevantPlayers[currentIndex][stat.label]));
-				tr.appendChild(td);
+				createTd(tr, relevantPlayers[currentIndex][stat.label]);
 				break;
 			}
 		}
@@ -538,5 +498,5 @@
 		return compareNames(p1, p2);
 	};
 	// ...Comparers
-	////////// ...Helper functions
+	////////// ...Functions
 })();
