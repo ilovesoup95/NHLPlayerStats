@@ -15,10 +15,7 @@
 
 		// TODO: Cordova has been loaded. Perform any initialization that requires Cordova here.
 		generateSelectOptions();
-		selectNearestTeam();
-		initializeData();
-		document.getElementById("teamSelect").onchange = teamSelect_onChange;
-		$("#teamSelect").removeAttr("disabled");
+		getLocation();
 	};
 
 	function onPause() {
@@ -34,6 +31,7 @@
 	var pagesDownloaded = 0;
 	var players = new Array();
 	var statsFileEntry;
+	var eventHandlersAttached = false;
 	////////// ...Globals
 
 	////////// Constants and definitions
@@ -140,23 +138,25 @@
 	}
 
 	// RDS Constants
-	var pagesToFetch = 3; // Fetch only 4 pages of stats
+	var pagesToFetch = 5;
 	var playersPerPage = 50;
 	// ...RDS Constants
 
 	var playersPerTable = 10;
 	var selectedTeam = teams.montreal.id;
 	var statsFileName = "stats.dat";
-	var statsCacheDuration = 1 * 1000 * 60;
+	var statsCacheDuration = 60 * 1000 * 60;
 	////////// ...Constants and definitions
 
 	////////// Functions
 	function generateSelectOptions() {
 		var slct = document.getElementById("teamSelect");
+
 		for (var team in teams) {
 			if (!teams.hasOwnProperty(team)) {
 				continue;
 			}
+
 			var option = document.createElement("option");
 			option.value = teams[team].id;
 			var teamStr = teams[team].location + " " + teams[team].name;
@@ -165,11 +165,47 @@
 		}
 	};
 
-	function selectNearestTeam() {
+	function getLocation() {
+		navigator.geolocation.getCurrentPosition(initializeApp, errorHandler);
+	}
 
+	function initializeApp(position) {
+		selectNearestTeam(position);
+		initializeData();
+	}
+
+	function calcDistance(coordsA, coordsB) {
+		var x = coordsA.lat - coordsB.lat;
+		var y = coordsA.long - coordsB.long;
+		return Math.abs(Math.sqrt(x * x + y * y));
+	};
+
+	function selectNearestTeam(position) {
+		var minDistance = Number.MAX_VALUE;
+		var nearestTeam = 0;
+		var coords = { lat: position.coords.latitude, long: position.coords.longitude };
+
+		for (var team in teams) {
+			if (!teams.hasOwnProperty(team)) {
+				continue;
+			}
+
+			var distance = calcDistance(coords, teams[team].coords);
+
+			if (distance < minDistance) {
+				minDistance = distance;
+				nearestTeam = teams[team].id;
+			}
+		}
+
+		selectedTeam = nearestTeam;
+		var teamSlct = document.getElementById("teamSelect");
+		teamSlct.value = selectedTeam;
+		document.getElementById("teamImg").src = urlHelper.getImgSrc(selectedTeam, true);
 	};
 
 	function teamSelect_onChange(e) {
+		$("#teamSelect").attr("disabled");
 		selectedTeam = parseInt($("#teamSelect option:selected").val());
 		$("table").remove();
 		$(".spinner").toggleClass("hidden");
@@ -177,33 +213,36 @@
 		displayStats();
 	};
 
-	function fileErrorHandler(e) {
+	function errorHandler(e) {
 		console.log(e.code);
 	};
 
 	function initializeData() {
-		window.requestFileSystem(LocalFileSystem.PERSISTENT, 2 * 1024 * 1024, gotFileSystem, fileErrorHandler);
+		window.requestFileSystem(LocalFileSystem.PERSISTENT, 2 * 1024 * 1024, gotFileSystem, errorHandler);
 	};
 
 	function gotFileSystem(fs) {
-		fs.root.getFile(statsFileName, { create: true, exclusive: false }, gotFileEntry, fileErrorHandler);
+		fs.root.getFile(statsFileName, { create: true, exclusive: false }, gotFileEntry, errorHandler);
 	};
 
 	function gotFileEntry(fe) {
 		statsFileEntry = fe;
-		fe.file(gotFile, fileErrorHandler);
+		fe.file(gotFile, errorHandler);
 	};
 
 	function gotFile(f) {
 		var reader = new FileReader();
+
 		reader.onloadend = function (e) {
 			loadStats(this.result);
 		};
+
 		reader.readAsText(f);
 	};
 
 	function loadStats(fileContent) {
 		var lines = fileContent.split("\n");
+
 		if (newDataNeeded(lines)) {
 			loadFromWeb();
 		} else {
@@ -231,6 +270,7 @@
 			var playerInfo = lines[i].split(";");
 			players[players.length] = new NhlPlayer(playerInfo[0], playerInfo[1], playerInfo[2], playerInfo[3], playerInfo[4], playerInfo[5], playerInfo[7], playerInfo[8]);
 		}
+
 		displayStats();
 	};
 
@@ -253,6 +293,7 @@
 
 	function httpGet(url, callback) {
 		var xmlhttp;
+
 		if (window.XMLHttpRequest) {
 			xmlhttp = new XMLHttpRequest();
 		}
@@ -270,6 +311,7 @@
 	function extractStats(htmlContent) {
 		var newPlayers = new Array(playersPerPage);
 		var count = 0;
+
 		$(htmlContent).find(".table.stats tbody tr").each(function (index, value) {
 			var name = $(this).find("td:nth-child(" + stats.name.column + ")").text();
 			var team = getTeamFromImgSrc($(this).find("img").attr("src"));
@@ -279,14 +321,13 @@
 			var assists = $(this).find("td:nth-child(" + stats.assists.column + ")").text();
 			var plusMinus = $(this).find("td:nth-child(" + stats.plusMinus.column + ")").text();
 			var avgTime = $(this).find("td:nth-child(" + stats.avgTime.column + ")").text();
-
 			newPlayers[count] = new NhlPlayer(name, team, pos, gamesPlayed, goals, assists, plusMinus, getSecondsFromAvgTime(avgTime));
 			count++;
 		});
 
 		Array.prototype.push.apply(players, newPlayers);
-
 		pagesDownloaded++;
+
 		if (pagesDownloaded == pagesToFetch) {
 			updateStatsFile();
 			displayStats();
@@ -299,15 +340,17 @@
 			fileWriter.seek(0);
 			var now = new Date().toString();
 			linesToWrite[0] = now;
+
 			for (var i = 0; i < players.length; i++) {
 				var p = players[i];
 				var playerString = [p.name, p.team, p.pos, p.gamesPlayed, p.goals, p.assists, p.points, p.plusMinus, p.avgTime].join(";");
 				linesToWrite[i + 1] = playerString;
 			}
+
 			linesToWrite[linesToWrite.length - 1] = "\n";
 			var statsString = linesToWrite.join("\n");
 			fileWriter.write(statsString);
-		}, fileErrorHandler);
+		}, errorHandler);
 	};
 
 	function displayStats() {
@@ -319,13 +362,22 @@
 			$("#" + tables[i].id + " > .spinner").toggleClass("hidden");
 			createTable(tables[i].id, tables[i].stat, relevantPlayers);
 		}
+
+		if (!eventHandlersAttached) {
+			document.getElementById("teamSelect").onchange = teamSelect_onChange;
+			eventHandlersAttached = true;
+		}
+
+		$("#teamSelect").removeAttr("disabled");
 	};
 
 	function createTd(parentRow, text) {
 		var td = document.createElement("TD");
+
 		if (text !== undefined && text !== "") {
 			td.appendChild(document.createTextNode(text));
 		}
+
 		parentRow.appendChild(td);
 		return td;
 	};
@@ -336,21 +388,22 @@
 		tableDiv.appendChild(table);
 		var tBody = document.createElement("TBODY");
 		table.appendChild(tBody);
-
 		var currentRank = 0;
 		var currentIndex = 0;
 
 		for (; currentIndex < playersPerTable; currentIndex++) {
 			var tr = document.createElement("TR");
 			tBody.appendChild(tr);
+
 			if (relevantPlayers[currentIndex].team === selectedTeam) {
 				$(tr).toggleClass("fav");
 			}
 
 			var nextRank = getRank(currentRank, currentIndex, stat, relevantPlayers);
+
 			if (nextRank !== currentRank) {
 				currentRank = nextRank;
-				createTd(tr, currentRank);
+				createTd(tr, currentRank + ".");
 			} else {
 				createTd(tr);
 			}
@@ -359,14 +412,13 @@
 			var img = document.createElement("IMG");
 			img.src = urlHelper.getImgSrc(relevantPlayers[currentIndex].team);
 			td.appendChild(img);
-
 			createTd(tr, relevantPlayers[currentIndex].name);
-
 			createTd(tr, relevantPlayers[currentIndex][stat.label]);
 		}
 
 		for (; currentIndex < relevantPlayers.length; currentIndex++) {
 			var nextRank = getRank(currentRank, currentIndex, stat, relevantPlayers);
+
 			if (nextRank !== currentRank) {
 				currentRank = nextRank;
 			}
@@ -375,16 +427,12 @@
 				var tr = document.createElement("TR");
 				tBody.appendChild(tr);
 				$(tr).toggleClass("fav nextFav");
-
-				createTd(tr, nextRank);
-
+				createTd(tr, nextRank + ".");
 				var td = createTd(tr);
 				var img = document.createElement("IMG");
 				img.src = urlHelper.getImgSrc(relevantPlayers[currentIndex].team);
 				td.appendChild(img);
-
 				createTd(tr, relevantPlayers[currentIndex].name);
-
 				createTd(tr, relevantPlayers[currentIndex][stat.label]);
 				break;
 			}
@@ -406,11 +454,13 @@
 	// Comparers
 	function pointsSortingComparer(p1, p2) {
 		var cmp = comparePoints(p1, p2);
+
 		if (cmp !== 0) {
 			return cmp;
 		}
 
 		cmp = compareGoals(p1, p2);
+
 		if (cmp !== 0) {
 			return cmp;
 		}
@@ -420,11 +470,13 @@
 
 	function goalsSortingComparer(p1, p2) {
 		var cmp = compareGoals(p1, p2);
+
 		if (cmp !== 0) {
 			return cmp;
 		}
 
 		cmp = comparePoints(p1, p2);
+
 		if (cmp !== 0) {
 			return cmp;
 		}
@@ -434,11 +486,13 @@
 
 	function assistsSortingComparer(p1, p2) {
 		var cmp = compareAssists(p1, p2);
+
 		if (cmp !== 0) {
 			return cmp;
 		}
 
 		cmp = comparePoints(p1, p2);
+
 		if (cmp !== 0) {
 			return cmp;
 		}
@@ -461,6 +515,7 @@
 	function comparePPS(p1, p2) {
 		var pps1 = p1.points / (p1.gamesPlayed * p1.avgTime);
 		var pps2 = p2.points / (p2.gamesPlayed * p2.avgTime);
+
 		if (pps1 > pps2) {
 			return -1;
 		} else if (pps1 < pps2) {
@@ -486,11 +541,13 @@
 
 	function compareBase(p1, p2) {
 		var cmp = comparePPS(p1, p2);
+
 		if (cmp !== 0) {
 			return cmp;
 		}
 
 		cmp = comparePlusMinus(p1, p2);
+
 		if (cmp !== 0) {
 			return cmp;
 		}
